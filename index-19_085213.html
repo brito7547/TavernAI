@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TavernAI — Mestre de Mesa com IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --stone:    #1a1714;
+      --stone2:   #221e1a;
+      --wood:     #2d1f0e;
+      --parch:    #c4a882;
+      --parch2:   #e8d5b0;
+      --ember:    #e8621a;
+      --gold:     #d4a843;
+      --gold2:    #f0c85a;
+      --ash:      #6b6055;
+      --smoke:    #3a3028;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--stone);
+      color: var(--parch);
+      font-family: 'Crimson Text', Georgia, serif;
+      overflow-x: hidden;
+    }
+
+    /* ── Chamas de fundo ── */
+    .flames {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 220px;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .flame {
+      position: absolute;
+      bottom: 0;
+      width: 40px;
+      border-radius: 50% 50% 30% 30%;
+      animation: flicker var(--dur, 2.2s) ease-in-out infinite alternate;
+      opacity: 0.18;
+      filter: blur(18px);
+    }
+    @keyframes flicker {
+      0%   { transform: scaleY(1)   scaleX(1)   translateY(0); opacity: 0.14; }
+      50%  { transform: scaleY(1.3) scaleX(0.9) translateY(-10px); opacity: 0.22; }
+      100% { transform: scaleY(0.9) scaleX(1.1) translateY(4px);  opacity: 0.16; }
+    }
+
+    /* ── Layout ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.2rem 5rem;
+      gap: 2.5rem;
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; }
+    .tavern-icon {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 0.5rem;
+      filter: drop-shadow(0 0 18px var(--ember));
+    }
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-weight: 900;
+      font-size: clamp(2.2rem, 8vw, 3.6rem);
+      letter-spacing: 0.06em;
+      background: linear-gradient(135deg, var(--gold) 30%, var(--gold2) 60%, var(--ember) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      text-shadow: none;
+    }
+    .tagline {
+      margin-top: 0.6rem;
+      font-size: 1.1rem;
+      font-style: italic;
+      color: var(--ash);
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Cards ── */
+    .cards {
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .card {
+      background: var(--stone2);
+      border: 1px solid var(--smoke);
+      border-radius: 4px;
+      padding: 1.8rem 1.6rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.6;
+    }
+
+    .card-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--ash);
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      background: var(--wood);
+      border: 1px solid var(--smoke);
+      border-radius: 3px;
+      padding: 0.75rem 1rem;
+      color: var(--parch2);
+      font-family: 'Crimson Text', serif;
+      font-size: 1.1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 1rem;
+    }
+    input:focus { border-color: var(--gold); }
+    input::placeholder { color: var(--ash); opacity: 0.6; }
+
+    .btn {
+      width: 100%;
+      padding: 0.85rem;
+      border: none;
+      border-radius: 3px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: filter 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--ember), #c0450e);
+      color: var(--parch2);
+    }
+    .btn-primary:hover { filter: brightness(1.15); }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+    .btn-secondary:hover { background: rgba(212,168,67,0.08); }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin: 0.4rem 0 1rem;
+      color: var(--ash);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--smoke);
+    }
+
+    .msg {
+      font-size: 0.9rem;
+      text-align: center;
+      margin-top: 0.8rem;
+      min-height: 1.2em;
+    }
+    .msg.err  { color: #e05555; }
+    .msg.ok   { color: #6dbf7a; }
+    .msg.info { color: var(--gold); }
+
+    /* ── Rodapé ── */
+    footer {
+      position: fixed;
+      bottom: 1rem;
+      font-size: 0.75rem;
+      color: var(--ash);
+      opacity: 0.5;
+      letter-spacing: 0.06em;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Chamas de fundo -->
+<div class="flames" id="flames"></div>
+
+<div class="page">
+  <header class="header">
+    <span class="tavern-icon">🏰</span>
+    <h1>TavernAI</h1>
+    <p class="tagline">Seu Mestre de Mesa com Inteligência Artificial</p>
+  </header>
+
+  <div class="cards">
+
+    <!-- Criar sala (Mestre) -->
+    <div class="card">
+      <div class="card-title">⚔️ Abrir Taverna — Criar Sala</div>
+      <label for="master-name">Seu nome (Mestre)</label>
+      <input type="text" id="master-name" placeholder="Ex: Dungeon Master Brito" maxlength="40" />
+      <label for="master-pass">Senha da sala (os jogadores precisarão dela)</label>
+      <input type="password" id="master-pass" placeholder="Senha secreta" maxlength="30" />
+      <button class="btn btn-primary" onclick="criarSala()">Convocar os Aventureiros</button>
+      <p class="msg" id="msg-criar"></p>
+    </div>
+
+    <div class="divider">ou</div>
+
+    <!-- Entrar na sala (Jogador) -->
+    <div class="card">
+      <div class="card-title">🗡️ Entrar na Taverna</div>
+      <label for="player-name">Seu nome / Personagem</label>
+      <input type="text" id="player-name" placeholder="Ex: Kael, o Errante" maxlength="40" />
+      <label for="room-code">Código da sala</label>
+      <input type="text" id="room-code" placeholder="Ex: KXMR7" maxlength="8" style="text-transform:uppercase" />
+      <label for="room-pass">Senha da sala</label>
+      <input type="password" id="room-pass" placeholder="Senha fornecida pelo Mestre" maxlength="30" />
+      <button class="btn btn-secondary" onclick="entrarSala()">Entrar na Aventura</button>
+      <p class="msg" id="msg-entrar"></p>
+    </div>
+
+  </div>
+</div>
+
+<footer>TavernAI · Powered by Claude</footer>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ── Supabase ──
+  const SUPA_URL = 'https://jkkpevljkphhxmcqwwud.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impra3Bldmxqa3BoaHhtY3F3d3VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjAwNzgsImV4cCI6MjA5NzkzNjA3OH0.j4rGWiTZxc3PhTX3k_xhlXya5imnubvy4Hye1IrGV4g';
+  const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  // ── Chamas decorativas ──
+  (function gerarChamas() {
+    const el = document.getElementById('flames');
+    const cores = ['#e8621a','#d4a843','#f0c85a','#c0450e','#ff8c3a'];
+    for (let i = 0; i < 14; i++) {
+      const f = document.createElement('div');
+      f.className = 'flame';
+      const h = 60 + Math.random() * 140;
+      f.style.cssText = `
+        left: ${(i / 14) * 100 + (Math.random() - 0.5) * 5}%;
+        height: ${h}px;
+        background: radial-gradient(ellipse at bottom, ${cores[i % cores.length]}, transparent 70%);
+        --dur: ${1.6 + Math.random() * 1.4}s;
+        animation-delay: ${Math.random() * -2}s;
+      `;
+      el.appendChild(f);
+    }
+  })();
+
+  // ── Gerar código de sala ──
+  function gerarCodigo() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  }
+
+  // ── Hash simples de senha ──
+  async function hashSenha(senha) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(senha));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  // ── Criar sala ──
+  async function criarSala() {
+    const nome = document.getElementById('master-name').value.trim();
+    const senha = document.getElementById('master-pass').value.trim();
+    const msg = document.getElementById('msg-criar');
+
+    if (!nome) { msg.className = 'msg err'; msg.textContent = 'Digite seu nome, Mestre.'; return; }
+    if (senha.length < 3) { msg.className = 'msg err'; msg.textContent = 'Senha muito curta (mínimo 3 caracteres).'; return; }
+
+    msg.className = 'msg info'; msg.textContent = 'Abrindo as portas da taverna…';
+
+    const codigo = gerarCodigo();
+    const senhaHash = await hashSenha(senha);
+
+    const { error } = await sb.from('salas').insert({
+      codigo,
+      senha_hash: senhaHash,
+      mestre_nome: nome,
+      grimorio_texto: '',
+      regras_texto: '',
+      fichas_json: '[]',
+    });
+
+    if (error) {
+      msg.className = 'msg err';
+      msg.textContent = 'Erro ao criar sala: ' + error.message;
+      return;
+    }
+
+    // Salvar sessão local
+    localStorage.setItem('tavern_session', JSON.stringify({
+      codigo, nome, papel: 'mestre', senha_hash: senhaHash
+    }));
+
+    msg.className = 'msg ok';
+    msg.textContent = `Sala criada! Código: ${codigo} — redirecionando…`;
+    setTimeout(() => {
+      window.location.href = `sala.html?sala=${codigo}`;
+    }, 1200);
+  }
+
+  // ── Entrar na sala ──
+  async function entrarSala() {
+    const nome = document.getElementById('player-name').value.trim();
+    const codigo = document.getElementById('room-code').value.trim().toUpperCase();
+    const senha = document.getElementById('room-pass').value.trim();
+    const msg = document.getElementById('msg-entrar');
+
+    if (!nome) { msg.className = 'msg err'; msg.textContent = 'Digite seu nome ou personagem.'; return; }
+    if (!codigo) { msg.className = 'msg err'; msg.textContent = 'Digite o código da sala.'; return; }
+    if (!senha) { msg.className = 'msg err'; msg.textContent = 'Digite a senha da sala.'; return; }
+
+    msg.className = 'msg info'; msg.textContent = 'Verificando credenciais…';
+
+    const senhaHash = await hashSenha(senha);
+
+    const { data, error } = await sb
+      .from('salas')
+      .select('id, codigo, senha_hash, mestre_nome')
+      .eq('codigo', codigo)
+      .single();
+
+    if (error || !data) {
+      msg.className = 'msg err'; msg.textContent = 'Sala não encontrada.'; return;
+    }
+    if (data.senha_hash !== senhaHash) {
+      msg.className = 'msg err'; msg.textContent = 'Senha incorreta.'; return;
+    }
+
+    localStorage.setItem('tavern_session', JSON.stringify({
+      codigo, nome, papel: 'jogador', senha_hash: senhaHash
+    }));
+
+    msg.className = 'msg ok';
+    msg.textContent = 'Bem-vindo à taverna! Entrando…';
+    setTimeout(() => {
+      window.location.href = `sala.html?sala=${codigo}`;
+    }, 1000);
+  }
+
+  // ── Redirecionar se já tem sessão válida ──
+  (function checarSessao() {
+    const s = localStorage.getItem('tavern_session');
+    if (!s) return;
+    const { codigo } = JSON.parse(s);
+    if (codigo && window.location.pathname !== '/TavernAI/sala.html') {
+      // Não redireciona automaticamente — deixa o usuário escolher
+    }
+  })();
+</script>
+</body>
+</html>
